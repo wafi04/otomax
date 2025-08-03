@@ -2,29 +2,29 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ErrorInterceptor } from './common/interceptors/error.interceptor';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
-import helmet from 'helmet';
+import { requestTimingMiddleware } from './middlewares/request.middleware';
+import { memoryUsageMiddleware } from './middlewares/memory.middleware';
+
+
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+  const logger = new Logger('Bootstrap');
 
-
-  // Cookie parser untuk session management
+  app.use(requestTimingMiddleware);
+  app.use(memoryUsageMiddleware);
+  
   app.use(cookieParser());
-
-  // CORS configuration untuk OAuth
   app.enableCors({
     origin: [
-      'http://localhost:3001', // Frontend development
-      'http://localhost:3000', // Same origin
-      configService.get('FRONTEND_URL') || 'http://localhost:3001',
-      // Production domains
-      configService.get('PRODUCTION_FRONTEND_URL'),
+      'http://localhost:3001', 
+      'http://localhost:3000',
     ].filter(Boolean),
-    credentials: true, // Important untuk cookies
+    credentials: true, 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Origin',
@@ -36,8 +36,14 @@ async function bootstrap() {
     ],
   });
 
-  // Global interceptors (kamu sudah ada)
+  // Import the new interceptors
+  const { TimingInterceptor } = require('./common/interceptors/timing.interceptor');
+  const { PerformanceInterceptor } = require('./common/interceptors/performance.interceptor');
+
+  // Global interceptors with timing
   app.useGlobalInterceptors(
+    new TimingInterceptor(),
+    new PerformanceInterceptor(),
     new ErrorInterceptor(),
     new ResponseInterceptor(),
   );
@@ -45,21 +51,21 @@ async function bootstrap() {
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strip properties yang tidak ada di DTO
-      forbidNonWhitelisted: true, // Throw error untuk unknown properties
-      transform: true, // Auto-transform payloads ke DTO instances
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
-        enableImplicitConversion: true, // Convert string ke number otomatis
+        enableImplicitConversion: true,
       },
     }),
   );
 
-  // Global prefix untuk API (optional)
+  // Global prefix untuk API
   app.setGlobalPrefix('api/v1', {
     exclude: [
-      'auth/google', // Exclude OAuth routes dari prefix
+      'auth/google',
       'auth/google/callback',
-      'health', // Health check endpoint
+      'health',
     ],
   });
 
@@ -71,29 +77,24 @@ async function bootstrap() {
 
   await app.listen(port);
 
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📊 Environment: ${environment}`);
-  console.log(`🔐 Google OAuth: ${configService.get('GOOGLE_CLIENT_ID') ? '✅ Configured' : '❌ Not configured'}`);
-  
+
   if (environment === 'development') {
-    console.log(`📋 Prisma Studio: npx prisma studio`);
-    console.log(`🔍 API Docs: http://localhost:${port}/api (if Swagger enabled)`);
+    logger.log(`📋 Prisma Studio: npx prisma studio`);
+    logger.log(`🔍 API Docs: http://localhost:${port}/api (if Swagger enabled)`);
   }
+  
+  setInterval(() => {
+    const memUsage = process.memoryUsage();
+    if (memUsage.heapUsed / 1024 / 1024 > 100) { 
+      logger.warn(
+        `⚠️  High memory usage detected: ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`
+      );
+    }
+  }, 60000);
 }
 
 bootstrap().catch((error) => {
-  console.error('❌ Error starting server:', error);
-  process.exit(1);
-});
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
+  const logger = new Logger('Bootstrap');
+  logger.error('❌ Error starting server:', error);
   process.exit(1);
 });

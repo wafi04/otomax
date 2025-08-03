@@ -2,6 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../lib/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 interface GoogleUser {
   googleId: string;
@@ -14,72 +15,115 @@ interface GoogleUser {
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService, 
-  ) {}
+    private jwtService: JwtService,
+    private readonly configService: ConfigService,
 
-  async validateGoogleUser(googleUser: GoogleUser) {
-    // Cek apakah user sudah ada berdasarkan googleId
-    let user = await this.prisma.user.findUnique({
-      where: { googleId: googleUser.googleId }
-    });
+  ) { }
 
-    if (!user) {
-      // Cek apakah email sudah terdaftar
-      const existingUser = await this.prisma.user.findUnique({
-        where: { email: googleUser.email }
+  private async linkGoogleAccount(googleUser: GoogleUser) {
+    try {
+      const user = await this.prisma.user.update({
+        where: { email: googleUser.email },
+        data: {
+          googleId: googleUser.googleId,
+          name: googleUser.name,
+          picture: googleUser.picture,
+        }
       });
 
-      if (existingUser) {
-        // Update existing user dengan Google ID
-        user = await this.prisma.user.update({
-          where: { email: googleUser.email },
-          data: {
-            googleId: googleUser.googleId,
-            name: googleUser.name,
-            picture: googleUser.picture,
-          }
-        });
-      } else {
-        // Generate username dari email
-        const username = this.generateUsername(googleUser.email);
-        
-        // Buat user baru
-        user = await this.prisma.user.create({
-          data: {
-            email: googleUser.email,
-            name: googleUser.name,
-            username: username,
-            picture: googleUser.picture,
-            googleId: googleUser.googleId,
-            roles: 'user', // default role
-          }
-        });
-      }
+      return user;
+    } catch (error) {
+      throw new Error('Unable to link Google account with existing user');
     }
+  }
 
-    return user;
+  async validateGoogleUser(googleUser: GoogleUser) {
+    const startTime = Date.now();
+
+    try {
+      // Generate username dari email
+      const username = this.generateUsernameOptimized(googleUser.email);
+
+      // Use upsert untuk create atau update
+      const user = await this.prisma.user.upsert({
+        where: {
+          googleId: googleUser.googleId
+        },
+        update: {
+          name: googleUser.name,
+          picture: googleUser.picture,
+        },
+        create: {
+          email: googleUser.email,
+          name: googleUser.name,
+          username: username,
+          picture: googleUser.picture,
+          googleId: googleUser.googleId,
+          roles: 'user',
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          username: true,
+          picture: true,
+          googleId: true,
+          roles: true,
+          createdAt: true,
+          updatedAt: true,
+        }
+      });
+
+      const duration = Date.now() - startTime;
+      return user;
+
+    } catch (error) {
+      // Handle unique constraint violation for email
+      if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
+        // Email already exists, try to link the accounts
+        return await this.linkGoogleAccount(googleUser);
+      }
+
+      const duration = Date.now() - startTime;
+      throw error
+    }
+  }
+  // Optimized username generation
+  private generateUsernameOptimized(email: string): string {
+    const baseUsername = email.split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 20);
+
+    // Add random suffix to avoid collisions
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    return `${baseUsername}${randomSuffix}`;
   }
 
   async createSession(userId: string) {
-    // Buat JWT token
-    const payload = { sub: userId };
-    const token = this.jwtService.sign(payload);
-    
-    // Simpan session ke database
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 hari
+    try {
+      const payload = { sub: userId };
+      const token = this.jwtService.sign(payload, {
+        secret: this.configService.get('jwt.accessToken.secret'),
+      });
 
-    const session = await this.prisma.session.create({
-      data: {
-        userId: userId,
-        token: token,
-        expiresAt: expiresAt,
-      }
-    });
+      // Simpan session ke database
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
 
-    return { token, session };
+      const session = await this.prisma.session.create({
+        data: {
+          userId: userId,
+          token: token,
+          expiresAt: expiresAt,
+        }
+      });
+
+      return { token, session };
+    } catch (error) {
+      throw new Error('Failed to create session');
+    }
   }
-
   async validateSession(token: string) {
     const session = await this.prisma.session.findUnique({
       where: { token },

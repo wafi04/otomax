@@ -26,6 +26,15 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
     hasPrev: boolean;
   };
 }
+export interface PaginatedData<T> {
+  items: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+  message?: string;
+}
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>> {

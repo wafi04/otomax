@@ -8,20 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String?  
-  username  String?  @unique 
-  email     String   @unique
-  googleId  String?  @unique @map("google_id")
-  picture   String?  
-  roles     String   @default("MEMBER") // bisa "user,admin" atau pakai enum
-  
-  // Timestamps
+  id       String  @id @default(cuid())
+  name     String?
+  username String? @unique
+  email    String  @unique
+  googleId String? @unique @map("google_id")
+  picture  String?
+  roles    String  @default("MEMBER") 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
-  // Relations
-  sessions  Session[]
+  sessions Session[]
 
   @@index([username])
   @@index([roles])
@@ -35,11 +31,29 @@ model Session {
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
   @@map("sessions")
 }
 
+model Category {
+  id              Int      @id @default(autoincrement())
+  name            String
+  subName         String   @map("sub_name")
+  code            String?  @unique
+  brand           String
+  desc            String?  @db.Text
+  requestBy       String?  @db.Char(200)
+  isCheckNickname String   @map("is_check_nickname") @db.Char(10)
+  status          String   @map("status") @db.Char(20)
+  bannerUrl       String? @db.Text
+  image          String? @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, code])
+  @@map("categories")
+}
