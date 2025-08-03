@@ -7,6 +7,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from 'src/services/auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
+import { CategoryModule } from 'src/services/category/category.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PassportModule } from '@nestjs/passport';
     ]),
     PassportModule.register({ defaultStrategy: 'google' }),
     AuthModule,
+    CategoryModule
   ],
   controllers: [AppController],
   providers: [
