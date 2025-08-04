@@ -45,7 +45,7 @@ export class AuthController {
 
   @Get('me')
   async getCurrentUser(@Req() req) {
-    const token = req.cookies?.auth_token;
+    const token = req.cookies?.access_token;
 
     if (!token) {
       return { user: null };

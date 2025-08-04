@@ -8,8 +8,6 @@ import * as cookieParser from 'cookie-parser';
 import { requestTimingMiddleware } from './middlewares/request.middleware';
 import { memoryUsageMiddleware } from './middlewares/memory.middleware';
 
-
-
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);

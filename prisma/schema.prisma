@@ -46,9 +46,9 @@ model Category {
   code            String?  @unique
   brand           String
   desc            String?  @db.Text
-  requestBy       String?  @db.Char(200)
-  isCheckNickname String   @map("is_check_nickname") @db.Char(10)
-  status          String   @map("status") @db.Char(20)
+  requestBy       String?  @db.VarChar(200)
+isCheckNickname String   @map("is_check_nickname") @db.VarChar(10)
+status          String   @map("status") @db.VarChar(20)
   bannerUrl       String? @db.Text
   image          String? @db.Text
   createdAt       DateTime @default(now())

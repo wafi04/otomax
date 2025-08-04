@@ -19,10 +19,11 @@ export class CategoryController {
   async getAll(
     @Query('limit') limit?: string,
     @Query('page') page?: string,
+    @Query('search') search? : string,
+    @Query('status') status? : string
   ) {
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const pageNum = page ? parseInt(page, 10) : 1;
-
-    return await this.categoryService.getAll(limitNum, pageNum);
+    return await this.categoryService.getAll(limitNum, pageNum,search,status);
   }
 }

@@ -26,38 +26,68 @@ export class CategoryService {
     }
   }
 
-  async getAll(
+async getAll(
     limit: number = 10,
     page: number = 1,
+    search?: string,
+    status?: string
   ): Promise<PaginatedData<CategoryData>> {
     try {
       const validatedLimit = Math.min(Math.max(limit, 1), 100);
       const validatedPage = Math.max(page, 1);
       const offset = (validatedPage - 1) * validatedLimit;
+      
+      // Build WHERE conditions
+      const whereConditions: string[] = [];
+      const queryParams: any[] = [];
+      let paramIndex = 1;
+
+      if (search && search.trim()) {
+        whereConditions.push(
+          `(name ILIKE $${paramIndex} OR sub_name ILIKE $${paramIndex + 1} OR code ILIKE $${paramIndex + 2} OR brand ILIKE $${paramIndex + 3})`
+        );
+        const searchTerm = `%${search.trim()}%`;
+        queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
+        paramIndex += 4;
+      }
+
+      if (status && status.trim()) {
+        whereConditions.push(`status = $${paramIndex}`);
+        queryParams.push(status.trim());
+        paramIndex += 1;
+      }
+
+      const whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+
+      const countQuery = `SELECT COUNT(*) as count FROM categories ${whereClause}`;
+      const selectQuery = `
+        SELECT 
+          id,
+          name,
+          sub_name,
+          code,
+          brand,
+          "bannerUrl",
+          image,
+          "desc",
+          "requestBy",
+          is_check_nickname,
+          status,
+          "createdAt"::text,
+          "updatedAt"::text
+        FROM categories
+        ${whereClause}
+        ORDER BY "createdAt" DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+
+      queryParams.push(validatedLimit, offset);
 
       const [totalResult, categories] = await Promise.all([
-        this.prisma.$queryRaw<[{ count: bigint }]>`
-          SELECT COUNT(*) as count  FROM categories
-        `,
-        this.prisma.$queryRaw<CategoryData[]>`
-          SELECT 
-            id,
-            name,
-            sub_name,
-            code,
-            brand,
-            "bannerUrl",
-            image,
-            "desc",
-            "requestBy",
-            is_check_nickname,
-            status,
-            "createdAt"::text,
-            "updatedAt"::text
-          FROM categories
-          ORDER BY "createdAt" DESC
-          LIMIT ${validatedLimit} OFFSET ${offset}
-        `,
+        this.prisma.$queryRawUnsafe<[{ count: bigint }]>(countQuery, ...queryParams.slice(0, -2)), // Remove limit/offset for count
+        this.prisma.$queryRawUnsafe<CategoryData[]>(selectQuery, ...queryParams),
       ]);
 
       const total = Number(totalResult[0].count);
@@ -72,7 +102,8 @@ export class CategoryService {
         message: `Successfully retrieved ${categories.length} categories`,
       };
     } catch (error) {
-      throw new Error('failed to get data');
+      console.error('Error in getAll:', error);
+      throw new Error('Failed to get data');
     }
   }
 
