@@ -1,0 +1,16 @@
+POST http://localhost:3000/api/v1/categories
+Content-Type: application/json
+
+{
+    "name": "mobile-legend",
+    "subName": "mobile-legend", 
+    "code": "MLBB",
+    "brand": "Moonton",
+    "desc": "Mobile Legend Game Haram",
+    "isCheckNickname": "active",
+    "status": "active"
+}
+
+
+###
+GET  http://localhost:3000/api/v1/categories?limit=10&page=1

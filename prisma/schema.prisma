@@ -57,3 +57,17 @@ model Category {
   @@index([status, code])
   @@map("categories")
 }
+
+
+
+model Service {
+  id Int @id @default(autoincrement())
+  name String
+  description String?  @db.Text
+  purchaseBuy Int
+  priceSale Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+

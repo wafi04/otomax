@@ -1,38 +1,43 @@
-import { PaginatedData } from "src/common/interceptors/response.interceptor";
-import { PrismaService } from "src/lib/prisma/prisma.service";
-import { CategoryData, CreateCategory } from "src/types/category";
+import { Injectable } from '@nestjs/common';
+import { PaginatedData } from 'src/common/interceptors/response.interceptor';
+import { PrismaService } from 'src/lib/prisma/prisma.service';
+import { CategoryData, CreateCategory } from 'src/types/category';
 
+
+@Injectable()
 export class CategoryService {
-    constructor(
-        private readonly prisma: PrismaService
-    ) {
+  constructor(private readonly prisma: PrismaService) {}
 
+  async Create(req: CreateCategory) {
+    try {
+      return await this.prisma.category.create({
+        data: {
+          brand: req.brand,
+          isCheckNickname: req.isCheckNickname,
+          name: req.name,
+          status: req.status,
+          subName: req.subName,
+          code: req.code,
+          desc: req.desc,
+        },
+      });
+    } catch (error) {
+      throw new Error('failed to created : ', error);
     }
+  }
 
-    async Create(req: CreateCategory) {
-        try {
-            return await this.prisma.category.create({
-                data: {
-                    ...req
-                }
-            })
-        } catch (error) {
-            throw error
-        }
-    }
-
-
-    async getAll(limit: number = 10, page: number = 1): Promise<PaginatedData<CategoryData>> {
-    
+  async getAll(
+    limit: number = 10,
+    page: number = 1,
+  ): Promise<PaginatedData<CategoryData>> {
     try {
       const validatedLimit = Math.min(Math.max(limit, 1), 100);
       const validatedPage = Math.max(page, 1);
       const offset = (validatedPage - 1) * validatedLimit;
 
-      // Execute count and data queries in parallel using raw SQL
       const [totalResult, categories] = await Promise.all([
         this.prisma.$queryRaw<[{ count: bigint }]>`
-          SELECT COUNT(*) as count FROM "Category"
+          SELECT COUNT(*) as count  FROM categories
         `,
         this.prisma.$queryRaw<CategoryData[]>`
           SELECT 
@@ -41,16 +46,16 @@ export class CategoryService {
             sub_name,
             code,
             brand,
-            banner_url,
+            "bannerUrl",
             image,
             "desc",
             "requestBy",
             is_check_nickname,
             status,
-            created_at::text,
-            updatedAt::text
+            "createdAt"::text,
+            "updatedAt"::text
           FROM categories
-          ORDER BY created_at DESC
+          ORDER BY "createdAt" DESC
           LIMIT ${validatedLimit} OFFSET ${offset}
         `,
       ]);
@@ -66,10 +71,36 @@ export class CategoryService {
         },
         message: `Successfully retrieved ${categories.length} categories`,
       };
-
     } catch (error) {
-      throw error;
+      throw new Error('failed to get data');
     }
   }
 
+  async Update(id: number, req: Partial<CreateCategory>) {
+    try {
+      return await this.prisma.category.update({
+        where: {
+          id,
+        },
+        data: {
+          ...req,
+        },
+      });
+    } catch (error) {
+      throw new Error('failed to update data');
+    }
+  }
+
+
+  async Delete(id: number) {
+    try {
+      return await this.prisma.category.delete({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      throw new Error('failed to deleted data');
+    }
+  }
 }
