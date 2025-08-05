@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Put, Param, Delete } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategory } from 'src/types/category';
 
@@ -25,5 +25,22 @@ export class CategoryController {
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const pageNum = page ? parseInt(page, 10) : 1;
     return await this.categoryService.getAll(limitNum, pageNum,search,status);
+  }
+
+
+  @Put()
+  async update(
+    @Param()  id : string,
+    @Body()  req : Partial<CreateCategory>
+  ){
+    return await this.categoryService.Update(parseInt(id),req)
+  }
+
+
+  @Delete()
+  async delete(
+    @Param() id : string
+  ){
+    return await this.categoryService.Delete(parseInt(id))
   }
 }

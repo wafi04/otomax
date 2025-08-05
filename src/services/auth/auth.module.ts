@@ -1,10 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { GoogleStrategy } from './google.strategy';
-import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { PrismaService } from 'src/lib/prisma/prisma.service';
-import { JwtModule, JwtService } from '@nestjs/jwt';
+import { JwtModule} from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
@@ -20,8 +19,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       },
       inject: [ConfigService],
        }),
+
    ],
   controllers: [AuthController],
-  providers: [GoogleStrategy,AuthService,PrismaService,JwtService],
+  providers: [GoogleStrategy,AuthService,PrismaService],
+  
 })
 export class AuthModule {}

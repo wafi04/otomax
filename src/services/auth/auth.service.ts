@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../lib/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { RedisService } from 'src/lib/redis/redis.service';
 
 interface GoogleUser {
   googleId: string;
@@ -17,8 +18,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private readonly configService: ConfigService,
-
-  ) { }
+    private  redisService: RedisService,
+  ) {}
 
   private async linkGoogleAccount(googleUser: GoogleUser) {
     try {
@@ -28,7 +29,7 @@ export class AuthService {
           googleId: googleUser.googleId,
           name: googleUser.name,
           picture: googleUser.picture,
-        }
+        },
       });
 
       return user;
@@ -41,13 +42,11 @@ export class AuthService {
     const startTime = Date.now();
 
     try {
-      // Generate username dari email
       const username = this.generateUsernameOptimized(googleUser.email);
 
-      // Use upsert untuk create atau update
       const user = await this.prisma.user.upsert({
         where: {
-          googleId: googleUser.googleId
+          googleId: googleUser.googleId,
         },
         update: {
           name: googleUser.name,
@@ -71,31 +70,24 @@ export class AuthService {
           roles: true,
           createdAt: true,
           updatedAt: true,
-        }
+        },
       });
 
-      const duration = Date.now() - startTime;
       return user;
-
     } catch (error) {
-      // Handle unique constraint violation for email
       if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-        // Email already exists, try to link the accounts
         return await this.linkGoogleAccount(googleUser);
       }
-
-      const duration = Date.now() - startTime;
-      throw error
+      throw error;
     }
   }
-  // Optimized username generation
   private generateUsernameOptimized(email: string): string {
-    const baseUsername = email.split('@')[0]
+    const baseUsername = email
+      .split('@')[0]
       .toLowerCase()
       .replace(/[^a-z0-9]/g, '')
       .substring(0, 20);
 
-    // Add random suffix to avoid collisions
     const randomSuffix = Math.random().toString(36).substring(2, 8);
     return `${baseUsername}${randomSuffix}`;
   }
@@ -116,8 +108,10 @@ export class AuthService {
           userId: userId,
           token: token,
           expiresAt: expiresAt,
-        }
+        },
       });
+
+      await this.redisService.setTokenMapping(token, userId, 3600);
 
       return { token, session };
     } catch (error) {
@@ -127,14 +121,13 @@ export class AuthService {
   async validateSession(token: string) {
     const session = await this.prisma.session.findUnique({
       where: { token },
-      include: { user: true }
+      include: { user: true },
     });
 
     if (!session || session.expiresAt < new Date()) {
       if (session) {
-        // Hapus session yang expired
         await this.prisma.session.delete({
-          where: { id: session.id }
+          where: { id: session.id },
         });
       }
       return null;
@@ -145,7 +138,7 @@ export class AuthService {
 
   async logout(token: string) {
     await this.prisma.session.deleteMany({
-      where: { token }
+      where: { token },
     });
   }
 
@@ -160,7 +153,7 @@ export class AuthService {
         picture: true,
         roles: true,
         createdAt: true,
-      }
+      },
     });
   }
 
@@ -174,7 +167,7 @@ export class AuthService {
         picture: true,
         roles: true,
         createdAt: true,
-      }
+      },
     });
   }
 

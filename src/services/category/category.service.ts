@@ -37,7 +37,6 @@ async getAll(
       const validatedPage = Math.max(page, 1);
       const offset = (validatedPage - 1) * validatedLimit;
       
-      // Build WHERE conditions
       const whereConditions: string[] = [];
       const queryParams: any[] = [];
       let paramIndex = 1;

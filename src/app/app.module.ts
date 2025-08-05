@@ -1,3 +1,4 @@
+// src/app/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -5,9 +6,10 @@ import jwtConfig from '../common/configs/jwt.config';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { AuthModule } from 'src/services/auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
-import { CategoryModule } from 'src/services/category/category.module';
+import { RedisModule } from '../lib/redis/redis.module'; 
+import { AuthModule } from '../services/auth/auth.module';
+import { CategoryModule } from '../services/category/category.module';
 
 @Module({
   imports: [
@@ -16,6 +18,7 @@ import { CategoryModule } from 'src/services/category/category.module';
       load: [jwtConfig],
       cache: true,
     }),
+    // Kemudian modules lainnya
     ThrottlerModule.forRoot([
       {
         name: 'default',
@@ -23,9 +26,10 @@ import { CategoryModule } from 'src/services/category/category.module';
         limit: 10,
       },
     ]),
+  RedisModule,
     PassportModule.register({ defaultStrategy: 'google' }),
     AuthModule,
-    CategoryModule
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [

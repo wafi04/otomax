@@ -2,15 +2,18 @@ import { Controller, Get, Req, UseGuards, Res, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
+import { RedisService } from 'src/lib/redis/redis.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(
+    private authService: AuthService,
+    private readonly redisService: RedisService,
+  ) {}
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
   async googleAuth(@Req() req) {
-    // Guard akan redirect ke Google
   }
 
   @Get('google/callback')
@@ -20,14 +23,19 @@ export class AuthController {
       const user = req.user;
       const { token } = await this.authService.createSession(user.id);
 
+      this.redisService.setUserSession(token, {
+        userId: user.userId,
+        username : user.username,
+        role : user.role
+      },3600);
+
       res.cookie('access_token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
-      res.redirect('http://localhost:3001/dashboard'); 
+      res.redirect('http://localhost:3001');
     } catch (error) {
-      console.error('Error in Google callback:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   }
@@ -46,13 +54,15 @@ export class AuthController {
   @Get('me')
   async getCurrentUser(@Req() req) {
     const token = req.cookies?.access_token;
-
     if (!token) {
       return { user: null };
     }
-
-    const user = await this.authService.validateSession(token);
-    return { user };
+    
+    let session = await this.redisService.getUserSession(token);
+    if (!session) {
+      session = await this.authService.validateSession(token);
+    }
+    return { session };
   }
 
   @Get('users')
