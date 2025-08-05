@@ -29,6 +29,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.13.0",
+    "@upstash/redis": "^1.35.3",
     "cache-manager": "^7.1.0",
     "cache-manager-redis-store": "^3.0.1",
     "class-transformer": "^0.5.1",

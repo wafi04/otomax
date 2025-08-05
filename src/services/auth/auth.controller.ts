@@ -21,12 +21,11 @@ export class AuthController {
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
     try {
       const user = req.user;
-      const { token } = await this.authService.createSession(user.id);
-
+      const { token ,session} = await this.authService.createSession(user.id);
       this.redisService.setUserSession(token, {
-        userId: user.userId,
+        userId: session.user.id,
         username : user.username,
-        role : user.role
+        role : session.user.roles
       },3600);
 
       res.cookie('access_token', token, {
@@ -51,19 +50,57 @@ export class AuthController {
     res.json({ message: 'Logged out successfully' });
   }
 
-  @Get('me')
-  async getCurrentUser(@Req() req) {
+@Get('me')
+async getCurrentUser(@Req() req) {
+  try {
     const token = req.cookies?.access_token;
     if (!token) {
       return { user: null };
     }
+
+    let session
     
-    let session = await this.redisService.getUserSession(token);
-    if (!session) {
-      session = await this.authService.validateSession(token);
+    try {
+      // Try to get session from Redis
+      session = await this.redisService.getUserSession(token);
+    } catch (redisError) {
+      
+      // If it's a JSON parsing error, try to debug and fix
+      if (redisError.message.includes('not valid JSON')) {
+        try {
+          // Get raw data to see what's stored
+          const rawData = await this.redisService.getRaw(`session:${token}`);
+          
+          // Delete corrupted session
+          await this.redisService.deleteUserSession(token);
+        } catch (debugError) {
+          console.error('Error during debug:', debugError);
+        }
+      }
     }
+
+    // If no session found in Redis or Redis failed, validate with auth service
+    if (!session) {
+      try {
+        session = await this.authService.validateSession(token);
+        
+        // If validation successful, store back in Redis
+        if (session) {
+          await this.redisService.setUserSession(token, session, 3600);
+          console.log('Session restored to Redis');
+        }
+      } catch (authError) {
+        console.error('Auth validation error:', authError);
+        return { user: null, error: 'Invalid session' };
+      }
+    }
+
     return { session };
+  } catch (error) {
+    console.error('General error in getCurrentUser:', error);
+    return { user: null, error: 'Internal server error' };
   }
+}
 
   @Get('users')
   async getAllUsers() {
