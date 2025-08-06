@@ -10,6 +10,7 @@ import { PassportModule } from '@nestjs/passport';
 import { RedisModule } from '../lib/redis/redis.module'; 
 import { AuthModule } from '../services/auth/auth.module';
 import { CategoryModule } from '../services/category/category.module';
+import { ProductModule } from 'src/services/service/service.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { CategoryModule } from '../services/category/category.module';
       },
     ]),
   RedisModule,
+  ProductModule,
     PassportModule.register({ defaultStrategy: 'google' }),
     AuthModule,
     CategoryModule,

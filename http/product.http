@@ -1,0 +1,14 @@
+POST http://localhost:3000/api/v1/product
+Content-Type: application/json
+
+{
+   "name": "Mobile Legends 3 Diamond",
+  "purchaseBuy": 1000,
+  "description": "Product Testing",
+  "status"  : "active",
+  "categoryId": 1
+}
+
+
+###
+GET  http://localhost:3000/api/v1/product?limit=10&page=1

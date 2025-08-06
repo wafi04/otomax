@@ -3,12 +3,6 @@ import { RedisClientService } from './redis-client.service';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
-<<<<<<< HEAD
-  constructor(private readonly redisClient: RedisClientService) { }
-
-  async onModuleDestroy() {
-    await this.redisClient.quit();
-=======
   private readonly logger = new Logger(RedisService.name);
 
   constructor(private readonly redisClient: RedisClientService) {
@@ -17,13 +11,11 @@ export class RedisService implements OnModuleDestroy {
 
   async onModuleDestroy() {
     try {
-      // Upstash Redis doesn't have a close method like traditional Redis clients
-      // The connection is handled automatically via HTTP requests
+
       this.logger.log('RedisService destroyed');
     } catch (error) {
       this.logger.error('Error during Redis service destruction:', error);
     }
->>>>>>> a49ddd3d53c80d5206ccb30bca48a29992c97c79
   }
 
   async get(key: string): Promise<string | null> {

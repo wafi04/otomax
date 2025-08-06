@@ -7,7 +7,4 @@ import { RedisClientService } from './redis-client.service';
   providers: [RedisClientService, RedisService],
   exports: [RedisClientService, RedisService],
 })
-export class RedisModule {
-  constructor() {
-  }
-}
+export class RedisModule {}

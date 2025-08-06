@@ -24,8 +24,8 @@ export default registerAs('jwt', () => ({
     username: "default"
   },
   duitku : {
-    duitkuKey : process.env.DUITKU_KEY,
-    duitkuService : process.env.DUITKU_KODE_SERVICE,
+    duitkuMerchantCode : process.env.DUITKU_MERCHANT_CODE,
+    duitkuMerchantKey : process.env.DUITKU_MERCHANT_KEY,
     callbackDeposit : process.env.CALLBACK_DEPOSIT_URL,
     callbackTransactions : process.env.CALLBACK_DEPOSIT_TRANSACTIONS
   }
