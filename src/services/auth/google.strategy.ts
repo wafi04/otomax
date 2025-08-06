@@ -15,10 +15,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       callbackURL: "http://localhost:3000/auth/google/callback",
       scope: ['email', 'profile'],
     });
-
-    this.logger.log('Google Strategy initialized');
-    this.logger.log(`Client ID: ${process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET'}`);
-    this.logger.log(`Client Secret: ${process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET'}`);
   }
 
   async validate(
@@ -40,7 +36,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       if (!email) {
-        
         done(new Error('No email found in Google profile'), null);
         return;
       }

@@ -47,8 +47,8 @@ model Category {
   brand           String
   desc            String?  @db.Text
   requestBy       String?  @db.VarChar(200)
-isCheckNickname String   @map("is_check_nickname") @db.VarChar(10)
-status          String   @map("status") @db.VarChar(20)
+  isCheckNickname String   @map("is_check_nickname") @db.VarChar(10)
+  status          String   @map("status") @db.VarChar(20)
   bannerUrl       String? @db.Text
   image          String? @db.Text
   createdAt       DateTime @default(now())
@@ -57,8 +57,6 @@ status          String   @map("status") @db.VarChar(20)
   @@index([status, code])
   @@map("categories")
 }
-
-
 
 model Service {
   id Int @id @default(autoincrement())
@@ -69,5 +67,8 @@ model Service {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+
+
 
 

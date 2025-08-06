@@ -29,7 +29,7 @@ export class AuthController {
         role : user.role
       },3600);
 
-      res.cookie('access_token', token, {
+      res.cookie('wfdnstore', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -41,19 +41,19 @@ export class AuthController {
   }
   @Post('logout')
   async logout(@Req() req, @Res() res: Response) {
-    const token = req.cookies?.auth_token;
+    const token = req.cookies?.wfdnstore;
 
     if (token) {
       await this.authService.logout(token);
     }
 
-    res.clearCookie('auth_token');
+    res.clearCookie('wfdnstore');
     res.json({ message: 'Logged out successfully' });
   }
 
   @Get('me')
   async getCurrentUser(@Req() req) {
-    const token = req.cookies?.access_token;
+    const token = req.cookies?.wfdnstore;
     if (!token) {
       return { user: null };
     }

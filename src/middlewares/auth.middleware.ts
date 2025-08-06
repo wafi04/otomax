@@ -19,7 +19,6 @@ export class AuthMiddleware implements NestMiddleware {
     }
 
     try {
-      // Verifikasi access token
       const payload = this.jwtService.verify(accessToken, {
         secret: this.configService.get('jwt.accessToken.secret'),
       });

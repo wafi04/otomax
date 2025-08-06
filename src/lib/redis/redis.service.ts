@@ -3,13 +3,10 @@ import { RedisClientService } from './redis-client.service';
 
 @Injectable()
 export class RedisService implements OnModuleDestroy {
-  constructor(private readonly redisClient: RedisClientService) {
-    console.log('🎉 RedisService initialized with client service:', !!this.redisClient);
-  }
+  constructor(private readonly redisClient: RedisClientService) { }
 
   async onModuleDestroy() {
     await this.redisClient.quit();
-    console.log('RedisService destroyed');
   }
 
   async get(key: string): Promise<string | null> {

@@ -6,7 +6,6 @@ import Redis from 'ioredis';
 export class RedisClientService extends Redis {
   constructor() {
     console.log('🚀 Creating Redis client service...');
-    
     super({
       host: "desired-chicken-9625.upstash.io",
       port: 6379,

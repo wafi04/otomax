@@ -9,6 +9,5 @@ import { RedisClientService } from './redis-client.service';
 })
 export class RedisModule {
   constructor() {
-    console.log('🏗️ Class-based RedisModule constructor called');
   }
 }
