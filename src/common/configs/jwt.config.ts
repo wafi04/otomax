@@ -16,11 +16,17 @@ export default registerAs('jwt', () => ({
   production: {
     ignoreExpiration: false,
   },
-   redis: {
+  redis: {
     host: "desired-chicken-9625.upstash.io",
     port: 6379,
     db: 0, // Ubah dari string ke number
     password: "ASWZAAIjcDE1RTc5OTg1NWVkOWU0MmMwOGQ1N2FiMDRmOTk4N2UxMHAxMA",
     username: "default"
+  },
+  duitku : {
+    duitkuKey : process.env.DUITKU_KEY,
+    duitkuService : process.env.DUITKU_KODE_SERVICE,
+    callbackDeposit : process.env.CALLBACK_DEPOSIT_URL,
+    callbackTransactions : process.env.CALLBACK_DEPOSIT_TRANSACTIONS
   }
 }));
