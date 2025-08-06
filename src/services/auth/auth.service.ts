@@ -1,9 +1,9 @@
-// src/auth/auth.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../lib/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RedisService } from 'src/lib/redis/redis.service';
+import { generateRandomId } from 'src/utils/generateRandomId';
 
 interface GoogleUser {
   googleId: string;
@@ -39,7 +39,6 @@ export class AuthService {
   }
 
   async validateGoogleUser(googleUser: GoogleUser) {
-    const startTime = Date.now();
 
     try {
       const username = this.generateUsernameOptimized(googleUser.email);
@@ -58,7 +57,7 @@ export class AuthService {
           username: username,
           picture: googleUser.picture,
           googleId: googleUser.googleId,
-          roles: 'user',
+          roles: 'member',
         },
         select: {
           id: true,
@@ -81,6 +80,8 @@ export class AuthService {
       throw error;
     }
   }
+
+
   private generateUsernameOptimized(email: string): string {
     const baseUsername = email
       .split('@')[0]
@@ -92,40 +93,54 @@ export class AuthService {
     return `${baseUsername}${randomSuffix}`;
   }
 
-  async createSession(userId: string) {
+
+
+async createSession(userId: string) {
+  return await this.prisma.$transaction(async (tx) => {
     try {
-      const payload = { sub: userId };
+      const sessionId = generateRandomId("SESSION");
+      
+      const payload = { sub: userId, sessionId };
+
       const token = this.jwtService.sign(payload, {
         secret: this.configService.get('jwt.accessToken.secret'),
+        expiresIn: '7d',
       });
 
-      // Simpan session ke database
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + 7);
 
-      const session = await this.prisma.session.create({
+      const session = await tx.session.create({
         data: {
+          id: sessionId,
           userId: userId,
           token: token,
           expiresAt: expiresAt,
         },
-        select : {
-          user : {
-            select : {
-              id : true,
-              roles : true
-            }
-          }
-        }
+        select: {
+          id: true,
+          user: {
+            select: {
+              id: true,
+              roles: true,
+            },
+          },
+        },
       });
 
-      await this.redisService.setTokenMapping(token, userId, 3600);
+      await this.redisService.setTokenMapping(token, userId, 604800);
 
-      return { token, session };
+      return { 
+        token, 
+        sessionId,
+        user: session.user 
+      };
+
     } catch (error) {
-      throw new Error('Failed to create session');
+      throw new Error(`Failed to create session: ${error.message}`);
     }
-  }
+  });
+}
   async validateSession(token: string) {
     const session = await this.prisma.session.findUnique({
       where: { token },
@@ -179,11 +194,7 @@ export class AuthService {
     });
   }
 
-  private generateUsername(email: string): string {
-    const baseUsername = email.split('@')[0];
-    const randomSuffix = Math.floor(Math.random() * 1000);
-    return `${baseUsername}${randomSuffix}`;
-  }
+
 
   // Helper untuk check roles
   hasRole(user: any, role: string): boolean {

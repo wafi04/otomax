@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { Response } from 'express';
 import { GoogleAuthGuard } from 'src/common/guards/google-auth.guard';
 import { RedisService } from 'src/lib/redis/redis.service';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -21,11 +22,12 @@ export class AuthController {
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
     try {
       const user = req.user;
-      const { token ,session} = await this.authService.createSession(user.id);
+      const { token ,user : session} = await this.authService.createSession(user.id);
+      
       this.redisService.setUserSession(token, {
-        userId: session.user.id,
+        userId: session.id,
         username : user.username,
-        role : session.user.roles
+        role : session.roles
       },3600);
 
       res.cookie('wfdnstore', token, {
@@ -52,7 +54,7 @@ export class AuthController {
 
   @Get('me')
   async getCurrentUser(@Req() req) {
-    const token = req.cookies?.access_token;
+    const token = req.cookies?.wfdnstore;
     if (!token) {
       return { user: null };
     }
@@ -78,12 +80,10 @@ export class AuthController {
       }
     }
 
-    // If no session found in Redis or Redis failed, validate with auth service
     if (!session) {
       try {
         session = await this.authService.validateSession(token);
         
-        // If validation successful, store back in Redis
         if (session) {
           await this.redisService.setUserSession(token, session, 3600);
           console.log('Session restored to Redis');
