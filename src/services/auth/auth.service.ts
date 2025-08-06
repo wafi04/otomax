@@ -109,6 +109,14 @@ export class AuthService {
           token: token,
           expiresAt: expiresAt,
         },
+        select : {
+          user : {
+            select : {
+              id : true,
+              roles : true
+            }
+          }
+        }
       });
 
       await this.redisService.setTokenMapping(token, userId, 3600);
