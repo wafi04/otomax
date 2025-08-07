@@ -66,10 +66,6 @@ export class ServiceRepository {
       const countParams = [...queryParams];
       const selectParams = [...queryParams, validatedLimit, offset];
 
-
-      // Execute queries
-    
-
       const [totalResult, services] = await Promise.all([
         this.prisma.$queryRawUnsafe<[{ count: number }]>(countQuery, ...countParams),
         this.prisma.$queryRawUnsafe<ServiceData[]>(selectQuery, ...selectParams),

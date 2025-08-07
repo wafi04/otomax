@@ -8,16 +8,16 @@ datasource db {
 }
 
 model User {
-  id       String  @id @default(cuid())
-  name     String?
-  username String? @unique
-  email    String  @unique
-  googleId String? @unique @map("google_id")
-  picture  String?
-  roles    String  @default("MEMBER") 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  sessions Session[]
+  id        String    @id @default(cuid())
+  name      String?
+  username  String?   @unique
+  email     String    @unique
+  googleId  String?   @unique @map("google_id")
+  picture   String?
+  roles     String    @default("MEMBER")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  sessions  Session[]
 
   @@index([username])
   @@index([roles])
@@ -49,8 +49,8 @@ model Category {
   requestBy       String?  @db.VarChar(200)
   isCheckNickname String   @map("is_check_nickname") @db.VarChar(10)
   status          String   @map("status") @db.VarChar(20)
-  bannerUrl       String? @db.Text
-  image          String? @db.Text
+  bannerUrl       String?  @db.Text
+  image           String?  @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -59,42 +59,51 @@ model Category {
 }
 
 model Service {
-  id          Int       @id @default(autoincrement())
+  id          Int              @id @default(autoincrement())
   name        String
   categoryId  Int
-  logoUrl     String?   @db.Text
-  description String?   @db.Text
-  status      String?    @db.VarChar(100)
-  purchaseBuy Int       
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  logoUrl     String?          @db.Text
+  description String?          @db.Text
+  status      String?          @db.VarChar(100)
+  purchaseBuy Int
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   pricings    ServicePricing[]
 }
 
 model CustomerGroup {
-  id       Int    @id @default(autoincrement())
-  name     String 
-  discount Int?   
+  id       Int              @id @default(autoincrement())
+  name     String
+  discount Int?
   pricings ServicePricing[]
 }
 
 model ServicePricing {
-  id              Int           @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   serviceId       Int
   customerGroupId Int
   priceSale       Int
   profit          Int
-  isActive        String        @db.VarChar(20) @default("active")
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  
-  service         Service       @relation(fields: [serviceId], references: [id])
-  customerGroup   CustomerGroup @relation(fields: [customerGroupId], references: [id])
-  
+  isActive        String   @default("active") @db.VarChar(20)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  service       Service       @relation(fields: [serviceId], references: [id])
+  customerGroup CustomerGroup @relation(fields: [customerGroupId], references: [id])
+
   @@unique([serviceId, customerGroupId])
 }
 
-
-
-
-
+model Method {
+  id          Int      @id @default(autoincrement())
+  name        String
+  grubName    String   @map("grub_name")
+  image       String    @db.Text
+  description String
+  minAmount   Int      @map("min_amount")
+  maxAmount   Int      @map("max_amount")
+  fee         Int?
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+}

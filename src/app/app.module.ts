@@ -1,4 +1,3 @@
-// src/app/app.module.ts
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -7,10 +6,11 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
-import { RedisModule } from '../lib/redis/redis.module'; 
+import { RedisModule } from '../lib/redis/redis.module';
 import { AuthModule } from '../services/auth/auth.module';
 import { CategoryModule } from '../services/category/category.module';
 import { ProductModule } from 'src/services/service/service.module';
+import { MethodModule } from 'src/services/method/method.module';
 
 @Module({
   imports: [
@@ -27,8 +27,9 @@ import { ProductModule } from 'src/services/service/service.module';
         limit: 10,
       },
     ]),
-  RedisModule,
-  ProductModule,
+    RedisModule,
+    MethodModule,
+    ProductModule,
     PassportModule.register({ defaultStrategy: 'google' }),
     AuthModule,
     CategoryModule,
@@ -42,4 +43,4 @@ import { ProductModule } from 'src/services/service/service.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
