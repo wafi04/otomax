@@ -3,7 +3,6 @@ import { PaginatedData } from 'src/common/interceptors/response.interceptor';
 import { PrismaService } from 'src/lib/prisma/prisma.service';
 import { CategoryData, CreateCategory } from 'src/types/category';
 
-
 @Injectable()
 export class CategoryService {
   constructor(private readonly prisma: PrismaService) {}
@@ -16,7 +15,9 @@ export class CategoryService {
           isCheckNickname: req.isCheckNickname,
           name: req.name,
           status: req.status,
-          subName: req.subName,
+          image: req.image,
+          bannerUrl: req.banner_url,
+          subName: req.sub_name,
           code: req.code,
           desc: req.desc,
         },
@@ -26,24 +27,24 @@ export class CategoryService {
     }
   }
 
-async getAll(
+  async getAll(
     limit: number = 10,
     page: number = 1,
     search?: string,
-    status?: string
+    status?: string,
   ): Promise<PaginatedData<CategoryData>> {
     try {
       const validatedLimit = Math.min(Math.max(limit, 1), 100);
       const validatedPage = Math.max(page, 1);
       const offset = (validatedPage - 1) * validatedLimit;
-      
+
       const whereConditions: string[] = [];
       const queryParams: any[] = [];
       let paramIndex = 1;
 
       if (search && search.trim()) {
         whereConditions.push(
-          `(name ILIKE $${paramIndex} OR sub_name ILIKE $${paramIndex + 1} OR code ILIKE $${paramIndex + 2} OR brand ILIKE $${paramIndex + 3})`
+          `(name ILIKE $${paramIndex} OR sub_name ILIKE $${paramIndex + 1} OR code ILIKE $${paramIndex + 2} OR brand ILIKE $${paramIndex + 3})`,
         );
         const searchTerm = `%${search.trim()}%`;
         queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm);
@@ -56,9 +57,10 @@ async getAll(
         paramIndex += 1;
       }
 
-      const whereClause = whereConditions.length > 0 
-        ? `WHERE ${whereConditions.join(' AND ')}` 
-        : '';
+      const whereClause =
+        whereConditions.length > 0
+          ? `WHERE ${whereConditions.join(' AND ')}`
+          : '';
 
       const countQuery = `SELECT COUNT(*) as count FROM categories ${whereClause}`;
       const selectQuery = `
@@ -85,8 +87,14 @@ async getAll(
       queryParams.push(validatedLimit, offset);
 
       const [totalResult, categories] = await Promise.all([
-        this.prisma.$queryRawUnsafe<[{ count: bigint }]>(countQuery, ...queryParams.slice(0, -2)), // Remove limit/offset for count
-        this.prisma.$queryRawUnsafe<CategoryData[]>(selectQuery, ...queryParams),
+        this.prisma.$queryRawUnsafe<[{ count: bigint }]>(
+          countQuery,
+          ...queryParams.slice(0, -2),
+        ), // Remove limit/offset for count
+        this.prisma.$queryRawUnsafe<CategoryData[]>(
+          selectQuery,
+          ...queryParams,
+        ),
       ]);
 
       const total = Number(totalResult[0].count);
@@ -113,14 +121,22 @@ async getAll(
           id,
         },
         data: {
-          ...req,
+          brand: req.brand,
+          isCheckNickname: req.isCheckNickname,
+          name: req.name,
+          status: req.status,
+          image: req.image,
+          bannerUrl: req.banner_url,
+          subName: req.sub_name,
+          code: req.code,
+          desc: req.desc,
         },
       });
     } catch (error) {
+      console.log(error);
       throw new Error('failed to update data');
     }
   }
-
 
   async Delete(id: number) {
     try {
@@ -130,6 +146,7 @@ async getAll(
         },
       });
     } catch (error) {
+      console.log(error);
       throw new Error('failed to deleted data');
     }
   }
