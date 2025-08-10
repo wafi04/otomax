@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import { requestTimingMiddleware } from './middlewares/request.middleware';
 import { memoryUsageMiddleware } from './middlewares/memory.middleware';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,14 +16,11 @@ async function bootstrap() {
 
   app.use(requestTimingMiddleware);
   app.use(memoryUsageMiddleware);
-  
+
   app.use(cookieParser());
   app.enableCors({
-    origin: [
-      'http://localhost:3001', 
-      'http://localhost:3000',
-    ].filter(Boolean),
-    credentials: true, 
+    origin: ['http://localhost:3001', 'http://localhost:3000'].filter(Boolean),
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'Origin',
@@ -35,8 +33,12 @@ async function bootstrap() {
   });
 
   // Import the new interceptors
-  const { TimingInterceptor } = require('./common/interceptors/timing.interceptor');
-  const { PerformanceInterceptor } = require('./common/interceptors/performance.interceptor');
+  const {
+    TimingInterceptor,
+  } = require('./common/interceptors/timing.interceptor');
+  const {
+    PerformanceInterceptor,
+  } = require('./common/interceptors/performance.interceptor');
 
   // Global interceptors with timing
   app.useGlobalInterceptors(
@@ -60,11 +62,7 @@ async function bootstrap() {
 
   // Global prefix untuk API
   app.setGlobalPrefix('api/v1', {
-    exclude: [
-      'auth/google',
-      'auth/google/callback',
-      'health',
-    ],
+    exclude: ['auth/google', 'auth/google/callback', 'health'],
   });
 
   // Graceful shutdown
@@ -75,17 +73,18 @@ async function bootstrap() {
 
   await app.listen(port);
 
-
   if (environment === 'development') {
     logger.log(`📋 Prisma Studio: npx prisma studio`);
-    logger.log(`🔍 API Docs: http://localhost:${port}/api (if Swagger enabled)`);
+    logger.log(
+      `🔍 API Docs: http://localhost:${port}/api (if Swagger enabled)`,
+    );
   }
-  
+
   setInterval(() => {
     const memUsage = process.memoryUsage();
-    if (memUsage.heapUsed / 1024 / 1024 > 100) { 
+    if (memUsage.heapUsed / 1024 / 1024 > 100) {
       logger.warn(
-        `⚠️  High memory usage detected: ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`
+        `⚠️  High memory usage detected: ${(memUsage.heapUsed / 1024 / 1024).toFixed(2)}MB`,
       );
     }
   }, 60000);

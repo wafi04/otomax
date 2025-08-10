@@ -14,21 +14,26 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(GoogleAuthGuard)
-  async googleAuth(@Req() req) {
-  }
+  async googleAuth(@Req() req) {}
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
     try {
       const user = req.user;
-      const { token ,user : session} = await this.authService.createSession(user.id);
-      
-      this.redisService.setUserSession(token, {
-        userId: session.id,
-        username : user.username,
-        role : session.roles
-      },3600);
+      const { token, user: session } = await this.authService.createSession(
+        user.id,
+      );
+
+      this.redisService.setUserSession(
+        token,
+        {
+          userId: session.id,
+          username: user.username,
+          role: session.roles,
+        },
+        3600,
+      );
 
       res.cookie('wfdnstore', token, {
         httpOnly: true,
@@ -59,19 +64,18 @@ export class AuthController {
       return { user: null };
     }
 
-    let session
-    
+    let session;
+
     try {
       // Try to get session from Redis
       session = await this.redisService.getUserSession(token);
     } catch (redisError) {
-      
       // If it's a JSON parsing error, try to debug and fix
       if (redisError.message.includes('not valid JSON')) {
         try {
           // Get raw data to see what's stored
           const rawData = await this.redisService.getRaw(`session:${token}`);
-          
+
           // Delete corrupted session
           await this.redisService.deleteUserSession(token);
         } catch (debugError) {
@@ -83,7 +87,7 @@ export class AuthController {
     if (!session) {
       try {
         session = await this.authService.validateSession(token);
-        
+
         if (session) {
           await this.redisService.setUserSession(token, session, 3600);
           console.log('Session restored to Redis');
@@ -95,10 +99,9 @@ export class AuthController {
     }
 
     return { session };
-  } catch (error) {
+  }
+  catch(error) {
     console.error('General error in getCurrentUser:', error);
     return { user: null, error: 'Internal server error' };
   }
 }
-
-  

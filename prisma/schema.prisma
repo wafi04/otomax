@@ -50,7 +50,12 @@ model Category {
   isCheckNickname String   @map("is_check_nickname") @db.VarChar(10)
   status          String   @map("status") @db.VarChar(20)
   bannerUrl       String?  @db.Text
-  image           String?  @db.Text
+  type      String @db.VarChar(20)
+  thumbnail      String?   @db.Text
+  instruction      String?   @db.Text
+  information      String   @db.Text
+  placeholder1   String @db.VarChar(30)  @map("placeholder_1")
+  placeholder_2   String  @db.VarChar(30) @map("placeholder_2")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -107,3 +112,49 @@ model Method {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 }
+
+
+
+model Transaction {
+  id            Int      @id @default(autoincrement())
+  orderId       String   @map("order_id")
+  nomortujuan   String   @map("nomor_tujuan")  
+  purchasePrice Int      @map("purchase_price")
+  purchaseSell  Int      @map("purchase_sell")
+  profit        Int      @map("profit")
+  productCode   String   @map("product_code")
+  message       String   @map("message")
+  log           String   @map("log")
+  sn            String?  @map("serial_number")
+  
+
+  status        String   @default("pending") 
+  userId        String?  @map("user_id")
+  customerName  String?  @map("customer_name")
+  customerPhone String?  @map("customer_phone")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  processedAt   DateTime? @map("processed_at") 
+  @@map("transactions")
+}
+
+
+model Payment {
+  id          Int      @id @default(autoincrement())
+  orderId     String   @map("order_id")
+  amount      Int
+  method      String   
+  fee         Int 
+  totalAmount Int      @map("total_amount")
+  
+  status      String   @default("pending")
+  userId      String?  @map("user_id")
+  reference   String?  
+  paymentDate DateTime? @map("payment_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+
+

@@ -9,8 +9,9 @@ import { PassportModule } from '@nestjs/passport';
 import { RedisModule } from '../lib/redis/redis.module';
 import { AuthModule } from '../services/auth/auth.module';
 import { CategoryModule } from '../services/category/category.module';
-import { ProductModule } from 'src/services/service/service.module';
 import { MethodModule } from 'src/services/method/method.module';
+import { ProductModule } from 'src/services/service/service.module';
+import { RabbitMQService } from 'src/lib/rabbitmq/rabbitmq.service';
 
 @Module({
   imports: [
@@ -37,10 +38,12 @@ import { MethodModule } from 'src/services/method/method.module';
   controllers: [AppController],
   providers: [
     AppService,
+    RabbitMQService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],
+  exports: [RabbitMQService],
 })
-export class AppModule { }
+export class AppModule {}
