@@ -20,7 +20,10 @@ export class ProductController {
   async Create(@Body() req: CreateService) {
     return await this.productService.Create(req);
   }
-
+  @Get('category/:code')
+  async GetByCategoryCode(@Param() code: { code: string }) {
+    return await this.productService.GetProductByCategoryCode(code.code);
+  }
   @Get()
   async GetAll(
     @Query('page') page: string,

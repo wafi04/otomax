@@ -12,6 +12,7 @@ import { CategoryModule } from '../services/category/category.module';
 import { MethodModule } from 'src/services/method/method.module';
 import { ProductModule } from 'src/services/service/service.module';
 import { RabbitMQService } from 'src/lib/rabbitmq/rabbitmq.service';
+import { ProviderModule } from 'src/services/provider/provider.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RabbitMQService } from 'src/lib/rabbitmq/rabbitmq.service';
         limit: 10,
       },
     ]),
+    ProviderModule,
     RedisModule,
     MethodModule,
     ProductModule,

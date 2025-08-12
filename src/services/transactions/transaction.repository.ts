@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { GetProductFromDigiflazz } from 'src/lib/digiflazz/digiflazz.dto';
 import { PrismaService } from 'src/lib/prisma/prisma.service';
 
 export type CreateTransactions = {
@@ -19,7 +20,7 @@ export type TransactionResponse = {
   status: string;
   customerPhone: string;
   customerName?: string;
-  createdAt: Date;
+  createdAt: string;
 };
 
 @Injectable()

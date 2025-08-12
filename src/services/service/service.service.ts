@@ -46,14 +46,13 @@ export class ServiceRepository {
           name,
           description,
           status,
-          "purchaseBuy",
-          "createdAt",
-          "updatedAt",
-          "categoryId",
-          "logoUrl"
-        FROM "Service"
+          created_at AS "CreatedAt",
+          updatedAt AS "UpdatedAt",
+          category_id AS "categoryId",
+          logo_url AS "logoUrl"
+        FROM services
         ${whereClause}
-        ORDER BY "createdAt" DESC
+        ORDER BY created_at DESC
         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
       `;
 
@@ -89,6 +88,38 @@ export class ServiceRepository {
         message: `Successfully retrieved ${services?.length || 0} services`,
       };
       return result;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new Error('Database constraint violation');
+      } else if (error.code === '42P01') {
+        throw new Error('Table "Service" does not exist');
+      } else if (error.code === '42703') {
+        throw new Error('Column does not exist in Service table');
+      } else if (error.message.includes('timeout')) {
+        throw new Error('Database query timeout');
+      } else if (error.message.includes('connection')) {
+        throw new Error('Database connection failed');
+      }
+
+      throw new Error(`Failed to get services: ${error.message}`);
+    }
+  }
+
+  async GetProductByCategoryCode(code: string) {
+    try {
+      const data = await this.prisma.$queryRaw`
+    SELECT 
+      s.name,
+      s.logo_url AS "logoUrl",
+      c.name AS "categoryName",
+      c.sub_name AS "categorySubName"
+    FROM services s
+    JOIN categories c ON c.id = s.category_id
+    WHERE c.code = ${code}
+      AND s.status = 'true'
+  `;
+
+      return data;
     } catch (error) {
       if (error.code === 'P2002') {
         throw new Error('Database constraint violation');

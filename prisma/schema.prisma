@@ -66,37 +66,83 @@ model Category {
 model Service {
   id          Int              @id @default(autoincrement())
   name        String
-  categoryId  Int
-  logoUrl     String?          @db.Text
+  categoryId  Int       @map("category_id")
+  logoUrl     String?          @db.Text @map("logo_url")
   description String?          @db.Text
   status      String?          @db.VarChar(100)
-  purchaseBuy Int
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  
   pricings    ServicePricing[]
+  providerServices ServiceProviderMapping[]
+
+  @@index([categoryId, status])
+  @@index([name])
+    @@map("services")
 }
+
+model ServiceProviderMapping {
+  id            Int     @id @default(autoincrement())
+  serviceId     Int  @map("service_id")
+  providerId    String  @map("provider_id")
+  provider      String  
+  isActive   String @db.VarChar(10) @map("is_active") @default("active")
+  lastSyncAt    DateTime? @map("last_sync_at")
+  providerPrice Int? @map("provider_price")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  service       Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, providerId, provider]) 
+  @@index([provider, providerId])
+  @@index([serviceId])
+  @@map("service_provider_mappings")
+}
+
+model ServiceProvider {
+  id         Int    @id @default(autoincrement())
+  provider   String 
+  urutan     Int
+  code       String
+  providerId String @map("provider_id")
+  isActive   String @db.VarChar(10) @map("is_active") @default("active")
+  baseUrl    String?  @map("base_url")
+  apiUsername String? @map("api_username")
+  apiKey     String? @map("api_key")
+  lastSyncAt DateTime? @map("last_sync_at")
+  
+  @@unique([provider, code])
+  @@index([provider, code])
+  @@map("service_providers")
+}
+
 
 model CustomerGroup {
   id       Int              @id @default(autoincrement())
   name     String
   discount Int?
   pricings ServicePricing[]
+
+    @@map("customer_groups")
+
 }
 
 model ServicePricing {
   id              Int      @id @default(autoincrement())
-  serviceId       Int
-  customerGroupId Int
-  priceSale       Int
+  serviceId       Int   @map("service_id")
+  customerGroupId Int   @map("customer_group_id")
+  priceSale       Int  @map("price_sale")
   profit          Int
-  isActive        String   @default("active") @db.VarChar(20)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isActive        String  @map("is_active") @default("active") @db.VarChar(20)
+  createdAt       DateTime @default(now())  @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
 
   service       Service       @relation(fields: [serviceId], references: [id])
   customerGroup CustomerGroup @relation(fields: [customerGroupId], references: [id])
 
   @@unique([serviceId, customerGroupId])
+  @@map("service_pricings")
 }
 
 model Method {
