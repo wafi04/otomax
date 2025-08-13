@@ -19,7 +19,7 @@ export class ProviderRepository {
     ]);
 
     return results.map((result, index) => ({
-      provider: ['digiflazz'][index], // Add more providers as needed
+      provider: ['digiflazz'][index],
       status: result.status,
       data: result.status === 'fulfilled' ? result.value : result.reason,
     }));
@@ -49,8 +49,8 @@ export class ProviderRepository {
           { id: number; name: string; providerId: string }[]
         >`
           SELECT s.id, s.name, spm.provider_id
-        FROM services s 
-        JOIN service_provider_mappings spm ON s.id = spm.service_id
+          FROM services s 
+          JOIN service_provider_mappings spm ON s.id = spm.service_id
           WHERE spm.provider = ${provider} AND spm.is_active = 'active'
         `,
         this.prisma.$queryRaw<{ service_id: number; provider_id: string }[]>`
@@ -192,10 +192,7 @@ export class ProviderRepository {
           createdServiceIds,
           operations.provider,
         );
-        await this.createServicePricings(
-          createdServiceIds,
-          operations.customerGroupMap,
-        );
+        await this.createServicePricings(createdServiceIds);
       }
     }
 
@@ -246,51 +243,56 @@ export class ProviderRepository {
   }
 
   private async createServicePricings(
-    serviceData: { id: number }[],
-    customerGroupMap: Map<string, number>,
+    serviceData: { id: number; providerPrice: number }[],
   ) {
-    const pricingData = [] as any;
     const profitMargins = { user: 4, reseller: 3, platinum: 2 };
+    const pricingData = serviceData.map((service) => ({
+      service_id: service.id,
+      price_user: this.calcPriceSale(service.providerPrice, profitMargins.user),
+      price_reseller: this.calcPriceSale(
+        service.providerPrice,
+        profitMargins.reseller,
+      ),
+      price_platinum: this.calcPriceSale(
+        service.providerPrice,
+        profitMargins.platinum,
+      ),
+      profit_user: profitMargins.user,
+      profit_reseller: profitMargins.reseller,
+      profit_platinum: profitMargins.platinum,
+    }));
 
-    serviceData.forEach((service) => {
-      ['user', 'reseller', 'platinum'].forEach((groupName) => {
-        const customerGroupId = customerGroupMap.get(groupName);
-        if (customerGroupId) {
-          pricingData.push({
-            service_id: service.id,
-            customerGroupId,
-            profit: profitMargins[groupName],
-          });
-        }
-      });
-    });
-
-    if (pricingData.length > 0) {
-      const BATCH_SIZE = 300;
-
-      for (let i = 0; i < pricingData.length; i += BATCH_SIZE) {
-        const batch = pricingData.slice(i, i + BATCH_SIZE);
-
-        try {
-          await this.prisma.$queryRaw`
-            INSERT INTO service_pricings 
-            (service_id, customer_group_id, price_sale, profit, is_active, created_at, updated_at)
-            VALUES ${Prisma.raw(
-              batch
-                .map(
-                  (p) =>
-                    `(${p.service_id}, ${p.customerGroupId}, 0, ${p.profit}, 'active', NOW(), NOW())`,
-                )
-                .join(', '),
-            )}
-            ON CONFLICT (service_id, customer_group_id) 
-            DO UPDATE SET profit = EXCLUDED.profit, updated_at = NOW()
-          `;
-        } catch (error) {
-          console.error(`Error creating pricings batch ${i}:`, error);
-        }
+    const BATCH_SIZE = 300;
+    for (let i = 0; i < pricingData.length; i += BATCH_SIZE) {
+      const batch = pricingData.slice(i, i + BATCH_SIZE);
+      try {
+        await this.prisma.$queryRawUnsafe(`
+        INSERT INTO service_pricings
+        (service_id, price_user, price_reseller, price_platinum, profit_user, profit_reseller, profit_platinum, is_active, created_at, updated_at)
+        VALUES ${batch
+          .map(
+            (p) =>
+              `(${p.service_id}, ${p.price_user}, ${p.price_reseller}, ${p.price_platinum}, ${p.profit_user}, ${p.profit_reseller}, ${p.profit_platinum}, 'active', NOW(), NOW())`,
+          )
+          .join(', ')}
+        ON CONFLICT (service_id)
+        DO UPDATE SET
+          price_user = EXCLUDED.price_user,
+          price_reseller = EXCLUDED.price_reseller,
+          price_platinum = EXCLUDED.price_platinum,
+          profit_user = EXCLUDED.profit_user,
+          profit_reseller = EXCLUDED.profit_reseller,
+          profit_platinum = EXCLUDED.profit_platinum,
+          updated_at = NOW()
+      `);
+      } catch (error) {
+        console.error(`Error creating pricings batch ${i}:`, error);
       }
     }
+  }
+
+  private calcPriceSale(base: number, profitPercent: number) {
+    return Math.round(base + (base * profitPercent) / 100);
   }
 
   private async updateServiceMappings(

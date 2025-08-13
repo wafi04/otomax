@@ -89,54 +89,66 @@ export class ServiceRepository {
       };
       return result;
     } catch (error) {
-      if (error.code === 'P2002') {
-        throw new Error('Database constraint violation');
-      } else if (error.code === '42P01') {
-        throw new Error('Table "Service" does not exist');
-      } else if (error.code === '42703') {
-        throw new Error('Column does not exist in Service table');
-      } else if (error.message.includes('timeout')) {
-        throw new Error('Database query timeout');
-      } else if (error.message.includes('connection')) {
-        throw new Error('Database connection failed');
-      }
-
       throw new Error(`Failed to get services: ${error.message}`);
     }
   }
 
-  async GetProductByCategoryCode(code: string) {
+  async GetProductByCategoryCode(code: string, role?: string) {
     try {
-      const data = await this.prisma.$queryRaw`
-    SELECT 
-      s.name,
-      s.logo_url AS "logoUrl",
-      c.name AS "categoryName",
-      c.sub_name AS "categorySubName"
-    FROM services s
-    JOIN categories c ON c.id = s.category_id
-    WHERE c.code = ${code}
-      AND s.status = 'true'
-  `;
+      // Pastikan role-nya sesuai dengan nama kolom di DB
+      const roleColumnMap: Record<string, string> = {
+        user: 'sp.price_user',
+        reseller: 'sp.price_reseller',
+        platinum: 'sp.price_platinum',
+      };
 
-      return data;
-    } catch (error) {
-      if (error.code === 'P2002') {
-        throw new Error('Database constraint violation');
-      } else if (error.code === '42P01') {
-        throw new Error('Table "Service" does not exist');
-      } else if (error.code === '42703') {
-        throw new Error('Column does not exist in Service table');
-      } else if (error.message.includes('timeout')) {
-        throw new Error('Database query timeout');
-      } else if (error.message.includes('connection')) {
-        throw new Error('Database connection failed');
-      }
+      // Default kalau role tidak ada / tidak cocok → pakai price_user
+      const priceColumn = role
+        ? roleColumnMap[role.toLowerCase()] || 'sp.price_user'
+        : 'sp.price_user';
 
-      throw new Error(`Failed to get services: ${error.message}`);
+      const query = `
+      SELECT 
+        s.id,
+        s.name,
+        s.logo_url AS "logoUrl",
+        s.description,
+        s.status AS "serviceStatus",
+        c.name AS "categoryName",
+        c.sub_name AS "categorySubName",
+        c.brand,
+        c.desc AS "categoryDescription",
+        c.thumbnail,
+        c.instruction,
+        c.information,
+        c.placeholder_1 AS "placeholder1",
+        c.placeholder_2 AS "placeholder2",
+        c.is_check_nickname AS "isCheckNickname",
+        ${priceColumn} AS "price"
+      FROM services s
+      JOIN categories c 
+        ON c.id = s.category_id
+      LEFT JOIN service_pricings sp 
+        ON sp.service_id = s.id AND sp.is_active = 'active'
+      WHERE c.code = $1
+        AND s.status = 'true'
+        AND c.status = 'active'
+      GROUP BY 
+        s.id, s.name, s.logo_url, s.description, s.status, 
+        c.name, c.sub_name, c.brand, c.desc,
+        c.thumbnail, c.instruction, c.information, 
+        c.placeholder_1, c.placeholder_2, c.is_check_nickname, ${priceColumn}
+      ORDER BY s.name ASC
+    `;
+
+      return await this.prisma.$queryRawUnsafe(query, code);
+    } catch (error: any) {
+      console.error(error);
+      throw new Error(
+        `Failed to get services by category code: ${error.message}`,
+      );
     }
   }
-
   async Update(id: number, req: Partial<CreateService>) {
     return await this.prisma.service.update({
       where: {

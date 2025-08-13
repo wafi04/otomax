@@ -1,13 +1,12 @@
-import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { DigiflazzReponseGetData, TopUpRequest } from './digiflazz.dto';
 import { TransactionResponse } from 'src/services/transactions/transaction.repository';
 
 export class DigiflazzService {
-  private readonly logger = new Logger(DigiflazzService.name);
-  private readonly DIGIFLAZZ_USERNAME = '';
-  private readonly DIGIFLAZZ_API_KEY = '';
+  private readonly DIGIFLAZZ_USERNAME = process.env
+    .DIGIFLAZZ_USERNAME as string;
+  private readonly DIGIFLAZZ_API_KEY = process.env.DIGIFLAZZ_API_KEY as string;
 
   constructor(private readonly configService: ConfigService) {}
   async checkPrice(): Promise<DigiflazzReponseGetData> {

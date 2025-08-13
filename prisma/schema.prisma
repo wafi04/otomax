@@ -72,13 +72,12 @@ model Service {
   status      String?          @db.VarChar(100)
   createdAt   DateTime         @default(now()) @map("created_at")
   updatedAt   DateTime         @updatedAt @map("updated_at")
-  
   pricings    ServicePricing[]
   providerServices ServiceProviderMapping[]
 
   @@index([categoryId, status])
   @@index([name])
-    @@map("services")
+  @@map("services")
 }
 
 model ServiceProviderMapping {
@@ -100,48 +99,33 @@ model ServiceProviderMapping {
   @@map("service_provider_mappings")
 }
 
-model ServiceProvider {
-  id         Int    @id @default(autoincrement())
-  provider   String 
-  urutan     Int
-  code       String
-  providerId String @map("provider_id")
-  isActive   String @db.VarChar(10) @map("is_active") @default("active")
-  baseUrl    String?  @map("base_url")
-  apiUsername String? @map("api_username")
-  apiKey     String? @map("api_key")
-  lastSyncAt DateTime? @map("last_sync_at")
-  
-  @@unique([provider, code])
-  @@index([provider, code])
-  @@map("service_providers")
-}
 
 
 model CustomerGroup {
   id       Int              @id @default(autoincrement())
   name     String
   discount Int?
-  pricings ServicePricing[]
 
-    @@map("customer_groups")
+  @@map("customer_groups")
 
 }
 
 model ServicePricing {
   id              Int      @id @default(autoincrement())
   serviceId       Int   @map("service_id")
-  customerGroupId Int   @map("customer_group_id")
-  priceSale       Int  @map("price_sale")
-  profit          Int
+  priceUser       Int  @map("price_user")
+  priceReseller   Int @map("price_reseller")
+  pricePlatinum   Int @map("price_platinum")
+  profitUser      Int @map("profit_user")
+  profitReseller  Int @map("profit_reseller")
+  profitPlatinum  Int @map("profit_platinum")
   isActive        String  @map("is_active") @default("active") @db.VarChar(20)
   createdAt       DateTime @default(now())  @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  service       Service       @relation(fields: [serviceId], references: [id])
-  customerGroup CustomerGroup @relation(fields: [customerGroupId], references: [id])
+  service         Service @relation(fields: [serviceId], references: [id])
 
-  @@unique([serviceId, customerGroupId])
+  @@unique([serviceId])
   @@map("service_pricings")
 }
 

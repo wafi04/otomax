@@ -22,7 +22,10 @@ export class ProductController {
   }
   @Get('category/:code')
   async GetByCategoryCode(@Param() code: { code: string }) {
-    return await this.productService.GetProductByCategoryCode(code.code);
+    return await this.productService.GetProductByCategoryCode(
+      code.code,
+      'user',
+    );
   }
   @Get()
   async GetAll(
